@@ -52,7 +52,7 @@
 
 * Ayesha Aslam
 * Farooq Olanrewaju - olanrewajufarooq@yahoo.com
-* Md Sazidur
+* Md Sazidur Rahman - mdsazidur02@gmail.com
 
 <strong>Supervisor</strong>: Rodrigo Ventura, <i>Assistant Professor of Electrical and Computer Engineering, IST</i>.
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
