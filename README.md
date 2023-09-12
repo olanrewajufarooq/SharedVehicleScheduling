@@ -12,7 +12,7 @@
   <h1 align="center">Autonomous Shared Vehicle Transportation System</h1>
 
   <p align="center">
-    A project for the autonomous scheduling of self-driving vehicles with optimization. This project is submitted as part of the evaluation of the Artificial Intelligence and Decision Systems course in the Bologna Master in Electrical and Computer Engineering, Instituto Superior Técnico, Lisboa (a consortium of the Marine and Maritime Intelligent Robotics (MIR) Master).
+    A project for the autonomous scheduling of self-driving vehicles with optimization. This project is submitted as part of the evaluation of the Artificial Intelligence and Decision Systems course in the Bologna Master in Electrical and Computer Engineering, Instituto Superior Técnico, Lisboa [a consortium of the Marine and Maritime Intelligent Robotics (MIR) Master].
     <br />
     <a href="https://www.univ-tln.fr/">
       <img src="ReadME/ist-logo.png" alt="IST Logo" height="80">
