@@ -3,8 +3,8 @@ import numpy as np
 
 
 class FleetSearch(search.Problem):
-
-
+    def __init__(self):
+        pass
     def load(self, fh):
         for line in fh:
             if line.startswith('#'):
@@ -16,5 +16,6 @@ class FleetSearch(search.Problem):
 
 
     def cost(self, sol):
+
         return calculated_cost
 
