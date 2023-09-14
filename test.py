@@ -3,7 +3,7 @@ import solution
 autoScheduler = solution.FleetSearch()
 
 f = open("input.txt", 'r')
-autoScheduler.load_new(f)
+autoScheduler.load(f)
 f.close()
 
 print(autoScheduler)
