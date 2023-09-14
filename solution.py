@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 
-class FleetSearch(search.Problem):
+class FleetProblem(search.Problem):
     """_summary_
 
     Args:
