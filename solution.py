@@ -152,8 +152,7 @@ Max passenger capacity: {self.V}
         sol_df.set_index(["action", "req id"], inplace=True)
                 
         calculated_cost = 0
-        # for req_id in range(self.no_of_req):
-        for req_id in range(5):
+        for req_id in range(self.no_of_requests):
             
             dropoff_time = sol_df["action time"]["Dropoff", req_id]
             # pickup_time = sol_df["action time"]["Pickup", req_id]
