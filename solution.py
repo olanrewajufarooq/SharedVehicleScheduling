@@ -12,6 +12,7 @@ class FleetSearch(search.Problem):
     """
     
     def __init__(self):
+        
         self.P = []
         self.no_of_points = 0
         
