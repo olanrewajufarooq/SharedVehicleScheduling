@@ -156,9 +156,12 @@ Max passenger capacity: {self.V}
         for req_id in range(5):
             
             dropoff_time = sol_df["action time"]["Dropoff", req_id]
-            pickup_time = sol_df["action time"]["Pickup", req_id]
+            # pickup_time = sol_df["action time"]["Pickup", req_id]
+            
             request_time = self.R[req_id][0] # Getting the request time from the dictionary
-            Tod = dropoff_time - pickup_time
+            pickup_point = self.R[req_id][1]
+            dropoff_point = self.R[req_id][2]
+            Tod = self.P[ pickup_point, dropoff_point ]
             
             delay = dropoff_time - request_time - Tod            
             calculated_cost += delay
