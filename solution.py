@@ -1,7 +1,6 @@
-from logging import raiseExceptions
 import search
 import numpy as np
-import pandas as pd
+import re
 
 
 class FleetProblem(search.Problem):
@@ -58,6 +57,7 @@ Max passenger capacity: {self.V}
             
             # Checking for lines with data indications
             elif line.startswith( ("P", "R", "V") ) and line_read_state is None:
+                line = re.sub(" +", " ", line) # Changing multiple whitespaces to one whitespace.
                 line_values = line.strip().split(" ") # Getting the content of the line
                 
                 # Assertation to check for error
@@ -80,61 +80,61 @@ Max passenger capacity: {self.V}
                     
                 else:
                     raise Exception(f"Unknown input for line value: {line_read_state}. Expected: P, R or V.")
-                
+
                 line_iter_count = 0
                 continue
-            
+
             # Reading of data and storing
             elif line_read_state in ["P", "R", "V"]:
-                
+
                 line_values = line.strip().split(" ") # Getting the content of the line
                 if len(line_values) == 0: continue # Edge case consideration for empty line before next data
-                
+
                 if line_read_state == "P":
                     # Assertation to check for error
-                    assert len(line_values) == self.no_of_points - line_iter_count - 1, f"Expected {self.no_of_points - line_iter_count - 1} data value for row {line_iter_count + 1} of P but obtained {len(line_values)} data value"
-                    
+                    assert len(line_values) == self.no_of_points - line_iter_count - 1, f"Expected {self.no_of_points - line_iter_count - 1} data value for row {line_iter_count + 1} of P but obtained {len(line_values)} data value. \nData: {line_values}"
+
                     # Storing data in the P matrix in a symmetric manner.
                     for i, val in enumerate(line_values): 
-                        self.P[line_iter_count, line_iter_count+i+1] = int(val)
-                        self.P[line_iter_count+i+1, line_iter_count] = int(val)
-                
+                        self.P[line_iter_count, line_iter_count+i+1] = float(val)
+                        self.P[line_iter_count+i+1, line_iter_count] = float(val)
+
                 elif line_read_state == "R":
                     # Assertation to check for error
-                    assert len(line_values) == 4, f"Expected {4} data value for row {line_iter_count + 1} of R but obtained {len(line_values)} data value"
-                    
+                    assert len(line_values) == 4, f"Expected {4} data value for row {line_iter_count + 1} of R but obtained {len(line_values)} data value. \nData: {line_values}"
+
                     # Storing data in the R dictionary
                     request_data = []
                     for i, val in enumerate(line_values): 
                         if i == 0: val = float(val) # Saving the time data as a float
                         else: val = int(val) # Saving indexes and passenger amount as integers
                         request_data.append(val)
-                        
+
                     self.R[line_iter_count] = request_data
-                    
+
                 elif line_read_state == "V":
                     # Assertation to check for error
-                    assert len(line_values) == 1, f"Expected {1} data value for row {self.v_iter_count + 1} of R but obtained {len(line_values)} data value"
-                    
+                    assert len(line_values) == 1, f"Expected {1} data value for row {self.v_iter_count + 1} of R but obtained {len(line_values)} data value. \nData: {line_values}"
+
                     # Storing data in the V list
                     self.V.append(int(line_values[0]))
-                    
+
                 else:
                     raise Exception("Report error in programming. This point should never be reached.")
-                
-                
+
+
                 line_iter_count += 1
-                
+
                 # Ending the data input into the P matrix
                 if line_iter_count == max_iteration:
                     line_read_state = None
                     line_iter_count = None
                     max_iteration = None
-                    
+
             else:
                 continue
-    
-    
+
+
     def cost(self, sol):
         """Calculation of the cost of the solution by summing all the delays.
 
@@ -146,24 +146,25 @@ Max passenger capacity: {self.V}
         Returns:
             float: the calcuted cost
         """
-        
-        # Convert the solution to a DataFrame
-        sol_df = pd.DataFrame(sol, columns=["action", "veh id", "req id", "action time"])
-        sol_df.set_index(["action", "req id"], inplace=True)
-                
+
+        # Convert the solution to a dictionary
+        sol_data = {}
+        for data in sol:
+            # Data: (action, veh id, request id, action time).
+            sol_data[(data[0], data[2])] = {"action time": data[3], "veh id": data[1]}
+
         calculated_cost = 0
         for req_id in range(self.no_of_requests):
-            
-            dropoff_time = sol_df["action time"]["Dropoff", req_id]
-            # pickup_time = sol_df["action time"]["Pickup", req_id]
-            
+
+            dropoff_time = sol_data["Dropoff", req_id]["action time"]
+
             request_time = self.R[req_id][0] # Getting the request time from the dictionary
             pickup_point = self.R[req_id][1]
             dropoff_point = self.R[req_id][2]
             Tod = self.P[ pickup_point, dropoff_point ]
-            
-            delay = dropoff_time - request_time - Tod            
-            calculated_cost += delay
-        
-        return calculated_cost
 
+            delay = dropoff_time - request_time - Tod
+            calculated_cost += delay
+
+        return calculated_cost
+    
