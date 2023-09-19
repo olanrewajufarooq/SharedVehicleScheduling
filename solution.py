@@ -101,17 +101,16 @@ Max passenger capacity: {self.V}
 
                 elif line_read_state == "R":
                     # Assertation to check for error
-                    assert len(line_values) == 4, f"Expected {4} data value for row {line_iter_count + 1} of R but obtained {len(line_values)} data value. \nData: {line_values}"
+                    # assert len(line_values) == 4, f"Expected {4} data value for row {line_iter_count + 1} of R but obtained {len(line_values)} data value. \nData: {line_values}"
 
                     # Storing data in the R dictionary
                     request_data = []
-                    for i, val in enumerate(line_values): 
-                        if i == 0: val = float(val) # Saving the time data as a float
-                        else: val = int(val) # Saving indexes and passenger amount as integers
-                        request_data.append(val)
-
+                    for i, val in enumerate(line_values):
+                            if val !='':
+                                if i == 0: val = float(val) # Saving the time data as a float 
+                                else: val = int(val) # Saving indexes and passenger amount as integers
+                                request_data.append(val)
                     self.R[line_iter_count] = request_data
-
                 elif line_read_state == "V":
                     # Assertation to check for error
                     assert len(line_values) == 1, f"Expected {1} data value for row {self.v_iter_count + 1} of R but obtained {len(line_values)} data value. \nData: {line_values}"
