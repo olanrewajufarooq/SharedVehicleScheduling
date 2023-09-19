@@ -57,8 +57,8 @@ Max passenger capacity: {self.V}
             
             # Checking for lines with data indications
             elif line.startswith( ("P", "R", "V") ) and line_read_state is None:
-                line = re.sub(" +", " ", line) # Changing multiple whitespaces to one whitespace.
-                line_values = line.strip().split(" ") # Getting the content of the line
+                line = re.sub(' +', ' ', line) # Changing multiple whitespaces to one whitespace.
+                line_values = line.strip().split(' ') # Getting the content of the line
                 
                 # Assertation to check for error
                 assert len(line_values) == 2, "Length of line values for number of points is not equal to 2"
@@ -87,6 +87,7 @@ Max passenger capacity: {self.V}
             # Reading of data and storing
             elif line_read_state in ["P", "R", "V"]:
 
+                line = re.sub(' +', ' ', line) # Changing multiple whitespaces to one whitespace.
                 line_values = line.strip().split(" ") # Getting the content of the line
                 if len(line_values) == 0: continue # Edge case consideration for empty line before next data
 
@@ -101,16 +102,18 @@ Max passenger capacity: {self.V}
 
                 elif line_read_state == "R":
                     # Assertation to check for error
-                    # assert len(line_values) == 4, f"Expected {4} data value for row {line_iter_count + 1} of R but obtained {len(line_values)} data value. \nData: {line_values}"
+                    assert len(line_values) == 4, f"Expected {4} data value for row {line_iter_count + 1} of R but obtained {len(line_values)} data value. \nData: {line_values}"
 
                     # Storing data in the R dictionary
                     request_data = []
                     for i, val in enumerate(line_values):
-                            if val !='':
-                                if i == 0: val = float(val) # Saving the time data as a float 
-                                else: val = int(val) # Saving indexes and passenger amount as integers
-                                request_data.append(val)
+                        if i == 0: val = float(val) # Saving the time data as a float 
+                        else: val = int(val) # Saving indexes and passenger amount as integers
+                        request_data.append(val)
+                    
+                    # Saving request data with a request ID (i.e. line_iter_count) as the index.
                     self.R[line_iter_count] = request_data
+                    
                 elif line_read_state == "V":
                     # Assertation to check for error
                     assert len(line_values) == 1, f"Expected {1} data value for row {self.v_iter_count + 1} of R but obtained {len(line_values)} data value. \nData: {line_values}"
