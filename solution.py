@@ -176,7 +176,7 @@ Max passenger capacity: {self.V}
     # ASSIGNMENT 2 ADDITIONS
     def create_initial_goal_states(self):
         """Creating the initial state and the goal state for the given problem"""
-        self.initial = {"R": [i for i in self.R.keys()], "V": { id: {"time": 0, "loc": 0, "space_left": self.V[id], "passengers": []} for id in range(self.V) }}
+        self.initial = {"R": [i for i in self.R.keys()], "V": { id: {"time": 0, "location": 0, "space_left": self.V[id], "passengers": [], "passengers_pick_time": []} for id in range(len(self.V)) }}
         # self.goal = {"R": [], "V": { id: [] for id in self.V.keys() }}
     
     
@@ -198,20 +198,20 @@ Max passenger capacity: {self.V}
             
             for veh_id in state["V"].keys():
                 
-                if self.V[veh_id]["space_left"] >= self.R[req_id][3]: # Pick up if there is space for passengers
+                if state["V"][veh_id]["space_left"] >= self.R[req_id][3]: # Pick up if there is space for passengers
                 
                     # Current veh time + time to arrive at pick up point
-                    arrival_time = self.V[veh_id]["time"] + self.P[ pick_up_loc, self.V[veh_id]["location"] ]
+                    arrival_time = state["V"][veh_id]["time"] + self.P[ pick_up_loc, state["V"][veh_id]["location"] ]
                     t = requested_pick_up_time if arrival_time < requested_pick_up_time else arrival_time
                     
                     yield ["Pickup", veh_id, req_id, t ]
         
-        for veh_id, req_ids in state["V"].items():
-            if len(req_ids) != 0:
-                for req_id in req_ids:
+        for veh_id in state["V"].keys():
+            if len(state["V"][veh_id]["passengers"]) != 0: # Checking if the vehicle is carrying any request to drop-off
+                for req_id in state["V"][veh_id]["passengers"]:
                     
                     # Current veh time + time to move from current position to dropoff point.
-                    drop_off_time = self.V[veh_id]["time"] + self.P[ self.R[req_id][2], self.V[veh_id]["location"] ]
+                    drop_off_time = state["V"][veh_id]["time"] + self.P[ self.R[req_id][2], state["V"][veh_id]["location"] ]
                     yield ["Dropoff", veh_id, req_id, drop_off_time]
             
             
