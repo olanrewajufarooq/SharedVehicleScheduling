@@ -22,7 +22,7 @@ class FleetProblem(search.Problem):
         self.no_of_vehicles = 0
         
         self.initial = {}
-    
+        # self.goal = {}
     
     def __str__(self):
         return f"""
@@ -38,7 +38,6 @@ Number of Vehicles: {self.no_of_vehicles}.
 Max passenger capacity: {self.V}
 =================================================
 """
-
 
     def load(self, fh):
         """Loading of scheduling input data from a file handle
@@ -137,6 +136,8 @@ Max passenger capacity: {self.V}
 
             else:
                 continue
+        
+        self.create_initial_goal_states()
 
 
     def cost(self, sol):
@@ -173,6 +174,12 @@ Max passenger capacity: {self.V}
         return calculated_cost
     
     # ASSIGNMENT 2 ADDITIONS
+    def create_initial_goal_states(self):
+        """Creating the initial state and the goal state for the given problem"""
+        self.initial = {"R": [i for i in self.R.keys()], "V": { id: [] for id in self.V.keys() }}
+        # self.goal = {"R": [], "V": { id: [] for id in self.V.keys() }}
+    
+    
     def result(self, state, action):
         pass
     
