@@ -204,7 +204,7 @@ Max passenger capacity: {self.V}
                     arrival_time = state["V"][veh_id]["time"] + self.P[ pick_up_loc, state["V"][veh_id]["location"] ]
                     t = requested_pick_up_time if arrival_time < requested_pick_up_time else arrival_time
                     
-                    yield ["Pickup", veh_id, req_id, t ]
+                    yield ("Pickup", veh_id, req_id, t )
         
         for veh_id in state["V"].keys():
             if len(state["V"][veh_id]["passengers"]) != 0: # Checking if the vehicle is carrying any request to drop-off
@@ -212,7 +212,7 @@ Max passenger capacity: {self.V}
                     
                     # Current veh time + time to move from current position to dropoff point.
                     drop_off_time = state["V"][veh_id]["time"] + self.P[ self.R[req_id][2], state["V"][veh_id]["location"] ]
-                    yield ["Dropoff", veh_id, req_id, drop_off_time]
+                    yield ("Dropoff", veh_id, req_id, drop_off_time)
             
             
     
