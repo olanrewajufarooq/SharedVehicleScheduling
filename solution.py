@@ -183,10 +183,16 @@ Max passenger capacity: {self.V}
     def result(self, state, action):
         new_state = state
         if action[0] == 'Pickup':
-            new_state["R"].remove([action[2]])
-            new_state["V"][action[1]].append(action[2])
+            new_state["R"].remove([action[2]]) #Remove request id from state
+            new_state["V"][action[1]]['time'] = action[-1] #Pickup time
+            new_state["V"][action[1]]['location'] = self.R[action[2]][1] #Pickup Location 
+            new_state["V"][action[1]]['space_left'] -= self.R[action[2]][-1]  #adjusting space after pickup 
+            new_state["V"][action[1]]['passengers'].append(self.R[action[2]][-1]) #Passengers of this particular request
         elif action[0] == 'Dropoff':
-            new_state["V"][action[1]].remove(action[2])
+            new_state["V"][action[1]]['time'] = action[-1] #Dropoff time
+            new_state["V"][action[1]]['location'] = self.R[action[2]][1] #Dropoff Location 
+            new_state["V"][action[1]]['space_left'] += self.R[action[2]][-1]  #adjusting space after pickup 
+            new_state["V"][action[1]]['passengers'].remove(self.R[action[2]][-1]) #Passengers of this particular request
         
         return new_state
     
