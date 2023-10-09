@@ -1,6 +1,6 @@
 import search
 import numpy as np
-import re
+import re, copy
 
 
 class FleetProblem(search.Problem):
@@ -181,18 +181,22 @@ Max passenger capacity: {self.V}
     
     
     def result(self, state, action):
-        new_state = state
+        new_state = copy.deepcopy(state)
+        # print(f"New State Before Action: {new_state}. Action: {action}")
+        
         if action[0] == 'Pickup':
-            new_state["R"].remove([action[2]]) #Remove request id from state
+            new_state["R"].remove( action[2] ) #Remove request id from state
             new_state["V"][action[1]]['time'] = action[-1] #Pickup time
             new_state["V"][action[1]]['location'] = self.R[action[2]][1] #Pickup Location 
             new_state["V"][action[1]]['space_left'] -= self.R[action[2]][-1]  #adjusting space after pickup 
-            new_state["V"][action[1]]['passengers'].append(self.R[action[2]][-1]) #Passengers of this particular request
+            new_state["V"][action[1]]['passengers'].append( action[2] ) #Passengers of this particular request
         elif action[0] == 'Dropoff':
             new_state["V"][action[1]]['time'] = action[-1] #Dropoff time
             new_state["V"][action[1]]['location'] = self.R[action[2]][1] #Dropoff Location 
             new_state["V"][action[1]]['space_left'] += self.R[action[2]][-1]  #adjusting space after pickup 
-            new_state["V"][action[1]]['passengers'].remove(self.R[action[2]][-1]) #Passengers of this particular request
+            new_state["V"][action[1]]['passengers'].remove( action[2] ) #Passengers of this particular request
+            
+        # print(f"New State After Action: {new_state}. Previous State: {state}")
         
         return new_state
     
@@ -215,16 +219,21 @@ Max passenger capacity: {self.V}
         for veh_id in state["V"].keys():
             if len(state["V"][veh_id]["passengers"]) != 0: # Checking if the vehicle is carrying any request to drop-off
                 for req_id in state["V"][veh_id]["passengers"]:
-                    
+                                        
                     # Current veh time + time to move from current position to dropoff point.
                     drop_off_time = state["V"][veh_id]["time"] + self.P[ self.R[req_id][2], state["V"][veh_id]["location"] ]
                     yield ("Dropoff", veh_id, req_id, drop_off_time)
-            
-            
-    
+
     
     def goal_test(self, state):
-        pass
+        result = False
+        if len(state["R"]) == 0:
+            for _, veh_value in state["V"].items():
+                if len(veh_value["passengers"]) != 0:
+                    break
+            else:
+                result = True
+        return result
     
     
     def path_cost(self, c, state1, action, state2):
