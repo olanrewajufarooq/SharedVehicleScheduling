@@ -176,7 +176,7 @@ Max passenger capacity: {self.V}
     # ASSIGNMENT 2 ADDITIONS
     def create_initial_goal_states(self):
         """Creating the initial state and the goal state for the given problem"""
-        self.initial = {"R": [i for i in self.R.keys()], "V": { id: {"time": 0, "location": 0, "space_left": self.V[id], "passengers": [], "passengers_pick_time": []} for id in range(len(self.V)) }}
+        self.initial = {"R": [i for i in self.R.keys()], "V": { id: {"time": 0, "location": 0, "space_left": self.V[id], "passengers": []} for id in range(len(self.V)) }}
         # self.goal = {"R": [], "V": { id: [] for id in self.V.keys() }}
     
     
@@ -222,7 +222,9 @@ Max passenger capacity: {self.V}
     
     
     def path_cost(self, c, state1, action, state2):
-        pass
+        veh_id = action[1] # Determining vehicle that performed action
+        # Path cost of previous state + time to travel from previous state to new state
+        return c + ( state2["V"][veh_id]["time"] - state1["V"][veh_id]["time"] )
     
     
     def solve(self):
