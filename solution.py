@@ -181,8 +181,14 @@ Max passenger capacity: {self.V}
     
     
     def result(self, state, action):
-        pass
-    
+        new_state = state
+        if action[0] == 'Pickup':
+            new_state["R"].remove([action[2]])
+            new_state["V"][action[1]].append(action[2])
+        elif action[0] == 'Dropoff':
+            new_state["V"][action[1]].remove(action[2])
+        
+        return new_state
     
     def actions(self, state):
         pass
