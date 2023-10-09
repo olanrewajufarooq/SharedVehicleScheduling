@@ -18,7 +18,7 @@ class FleetProblem(search.Problem):
         self.R = {}
         self.no_of_requests = 0
         
-        self.V = []
+        self.V = {}
         self.no_of_vehicles = 0
         
         self.initial = {}
@@ -121,8 +121,8 @@ Max passenger capacity: {self.V}
                     assert len(line_values) == 1, f"Expected {1} data value for row {self.v_iter_count + 1} of R but obtained {len(line_values)} data value. \nData: {line_values}"
 
                     # Storing data in the V list
-                    self.V.append(int(line_values[0]))
-
+                    self.V[line_iter_count] = { "time": 0, "capacity": int(line_values[0]), "space_left": int(line_values[0]) }
+                    
                 else:
                     raise Exception("Report error in programming. This point should never be reached.")
 
