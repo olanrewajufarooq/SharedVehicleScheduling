@@ -18,7 +18,7 @@ class FleetProblem(search.Problem):
         self.R = {}
         self.no_of_requests = 0
         
-        self.V = {}
+        self.V = []
         self.no_of_vehicles = 0
         
         self.initial = {}
@@ -120,7 +120,7 @@ Max passenger capacity: {self.V}
                     assert len(line_values) == 1, f"Expected {1} data value for row {self.v_iter_count + 1} of R but obtained {len(line_values)} data value. \nData: {line_values}"
 
                     # Storing data in the V list
-                    self.V[line_iter_count] = { "time": 0, "capacity": int(line_values[0]), "space_left": int(line_values[0]) }
+                    self.V.append( int(line_values[0]) )
                     
                 else:
                     raise Exception("Report error in programming. This point should never be reached.")
@@ -176,7 +176,7 @@ Max passenger capacity: {self.V}
     # ASSIGNMENT 2 ADDITIONS
     def create_initial_goal_states(self):
         """Creating the initial state and the goal state for the given problem"""
-        self.initial = {"R": [i for i in self.R.keys()], "V": { id: [] for id in self.V.keys() }}
+        self.initial = {"R": [i for i in self.R.keys()], "V": { id: {"time": 0, "loc": 0, "space_left": self.V[id], "passengers": []} for id in range(self.V) }}
         # self.goal = {"R": [], "V": { id: [] for id in self.V.keys() }}
     
     
@@ -185,7 +185,30 @@ Max passenger capacity: {self.V}
     
     
     def actions(self, state):
-        pass
+        
+        for req_id in state["R"]:
+            pick_up_loc = self.R[req_id][1]
+            requested_pick_up_time = self.R[req_id][0]
+            
+            for veh_id in state["V"].keys():
+                
+                if self.V[veh_id]["space_left"] >= self.R[req_id][3]: # Pick up if there is space for passengers
+                
+                    # Current veh time + time to arrive at pick up point
+                    arrival_time = self.V[veh_id]["time"] + self.P[ pick_up_loc, self.V[veh_id]["location"] ]
+                    t = requested_pick_up_time if arrival_time < requested_pick_up_time else arrival_time
+                    
+                    yield ["Pickup", veh_id, req_id, t ]
+        
+        for veh_id, req_ids in state["V"].items():
+            if len(req_ids) != 0:
+                for req_id in req_ids:
+                    
+                    # Current veh time + time to move from current position to dropoff point.
+                    drop_off_time = self.V[veh_id]["time"] + self.P[ self.R[req_id][2], self.V[veh_id]["location"] ]
+                    yield ["Dropoff", veh_id, req_id, drop_off_time]
+            
+            
     
     
     def goal_test(self, state):
