@@ -228,6 +228,6 @@ Max passenger capacity: {self.V}
     
     
     def solve(self):
-        goal_node = search.iterative_deepening_search(self)
+        goal_node = search.depth_limited_search(self, limit=self.no_of_requests*2)
         return goal_node.solution()
     
