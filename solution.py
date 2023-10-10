@@ -237,8 +237,13 @@ Max passenger capacity: {self.V}
         #         result = True
         # return result
         
-        expanded_actions = self.actions(state)
-        if len( list(expanded_actions) ) == 0:
+        # expanded_actions = self.actions(state)
+        # if len( list(expanded_actions) ) == 0:
+        #     return True
+        # else:
+        #     return False
+        
+        if state == self.goal:
             return True
         else:
             return False
@@ -248,7 +253,7 @@ Max passenger capacity: {self.V}
         veh_id = action[1] # Determining vehicle that performed action
         # Path cost of previous state + time to travel from previous state to new state
         # return c + ( state2["V"][veh_id]["time"] - state1["V"][veh_id]["time"] )
-        return state2["V"][veh_id]["time"]
+        return state2.vehicles[veh_id]["time"]
     
     
     def solve(self):
