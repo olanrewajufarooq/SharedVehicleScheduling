@@ -183,23 +183,20 @@ Max passenger capacity: {self.V}
     
     
     def result(self, state, action):
-        new_state = copy.deepcopy(state)
-        # print(f"New State Before Action: {new_state}. Action: {action}")
+        new_state = state.copy()
         
         if action[0] == 'Pickup':
-            new_state["R"].remove( action[2] ) #Remove request id from state
-            new_state["V"][action[1]]['time'] = action[-1] #Pickup time
-            new_state["V"][action[1]]['location'] = self.R[action[2]][1] #Pickup Location 
-            new_state["V"][action[1]]['space_left'] -= self.R[action[2]][-1]  #adjusting space after pickup 
-            new_state["V"][action[1]]['passengers'].append( action[2] ) #Passengers of this particular request
+            new_state.request.remove( action[2] ) #Remove request id from state
+            new_state.vehicles[action[1]]['time'] = action[-1] #Pickup time
+            new_state.vehicles[action[1]]['location'] = self.R[action[2]][1] #Pickup Location 
+            new_state.vehicles[action[1]]['space_left'] -= self.R[action[2]][-1]  #adjusting space after pickup 
+            new_state.vehicles[action[1]]['passengers'].append( action[2] ) #Passengers of this particular request
         elif action[0] == 'Dropoff':
-            new_state["V"][action[1]]['time'] = action[-1] #Dropoff time
-            new_state["V"][action[1]]['location'] = self.R[action[2]][1] #Dropoff Location 
-            new_state["V"][action[1]]['space_left'] += self.R[action[2]][-1]  #adjusting space after pickup 
-            new_state["V"][action[1]]['passengers'].remove( action[2] ) #Passengers of this particular request
-            
-        # print(f"New State After Action: {new_state}. Previous State: {state}")
-        
+            new_state.vehicles[action[1]]['time'] = action[-1] #Dropoff time
+            new_state.vehicles[action[1]]['location'] = self.R[action[2]][1] #Dropoff Location 
+            new_state.vehicles[action[1]]['space_left'] += self.R[action[2]][-1]  #adjusting space after pickup 
+            new_state.vehicles[action[1]]['passengers'].remove( action[2] ) #Passengers of this particular request
+
         return new_state
     
     def actions(self, state):
