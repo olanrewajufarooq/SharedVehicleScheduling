@@ -177,7 +177,9 @@ Max passenger capacity: {self.V}
     # ASSIGNMENT 2 ADDITIONS
     def create_initial_goal_states(self):
         """Creating the initial state and the goal state for the given problem"""
-        self.initial = {"R": [i for i in self.R.keys()], "V": { id: {"time": 0, "location": 0, "space_left": self.V[id], "passengers": []} for id in range(len(self.V)) }}
+        self.initial = State(request= [i for i in self.R.keys()], vehicles={ id: {"time": 0, "location": 0, "space_left": self.V[id], "passengers": []} for id in range(len(self.V)) })
+        self.goal = State(request=[], vehicles={ id: {"time": None, "location": None, "space_left": 0, "passengers": []} for id in range(len(self.V)) })
+        # self.initial = {"R": [i for i in self.R.keys()], "V": { id: {"time": 0, "location": 0, "space_left": self.V[id], "passengers": []} for id in range(len(self.V)) }}
         # self.goal = {"R": [], "V": { id: [] for id in self.V.keys() }}
     
     
@@ -257,3 +259,48 @@ Max passenger capacity: {self.V}
         # goal_node = search.iterative_deepening_search(self)
         # goal_node = search.uniform_cost_search(self)
         return goal_node.solution()
+
+
+class State:
+    
+    def __init__(self, request = [], vehicles = {} ):
+        self.request = request
+        self.vehicles = vehicles
+        
+    @property
+    def id(self):
+        """_summary_
+
+        Returns:
+            _type_: _description_
+        """
+        id_value = [tuple(self.request)]
+        
+        for _, vehicle_values in self.vehicles.items():
+            id_value.append( tuple(vehicle_values["passengers"]) )
+            
+        return tuple(id_value)
+        
+    def __eq__(self, state):
+        all_vehicle_states_equal = False
+        
+        for vehicle, vehicle_values in self.vehicles.items():
+            if set(vehicle_values["passengers"]) != set(state.vehicles[vehicle]["passengers"]):
+                break
+        else:
+            all_vehicle_states_equal = True
+        
+        return isinstance(state, State) and ( set(self.request) == set(state.request) ) and all_vehicle_states_equal
+    
+    def __hash__(self):
+        return hash(self.id)
+    
+    def __str__(self) -> str:
+        return f"""
+=================================================
+Requests: {self.request}.
+Vehicles: 
+{self.vehicles}
+=================================================
+"""
+    
