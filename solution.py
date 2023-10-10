@@ -300,4 +300,7 @@ Vehicles:
 {self.vehicles}
 =================================================
 """
+
+    def __copy__(self):
+        return State(request=copy.deepcopy(self.request), vehicles=copy.deepcopy(self.vehicles) )
     
