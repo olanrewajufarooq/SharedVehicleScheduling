@@ -183,7 +183,7 @@ Max passenger capacity: {self.V}
     
     
     def result(self, state, action):
-        new_state = state.copy()
+        new_state = state.__copy__()
         
         if action[0] == 'Pickup':
             new_state.request.remove( action[2] ) #Remove request id from state
@@ -280,6 +280,9 @@ class State:
             
         return tuple(id_value)
         
+    def __copy__(self):
+        return State(request=copy.deepcopy(self.request), vehicles=copy.deepcopy(self.vehicles) )
+    
     def __eq__(self, state):
         all_vehicle_states_equal = False
         
@@ -303,6 +306,4 @@ Vehicles:
 =================================================
 """
 
-    def __copy__(self):
-        return State(request=copy.deepcopy(self.request), vehicles=copy.deepcopy(self.vehicles) )
     
