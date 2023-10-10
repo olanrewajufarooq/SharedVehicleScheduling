@@ -249,8 +249,8 @@ Max passenger capacity: {self.V}
     def path_cost(self, c, state1, action, state2):
         veh_id = action[1] # Determining vehicle that performed action
         # Path cost of previous state + time to travel from previous state to new state
-        # return c + ( state2["V"][veh_id]["time"] - state1["V"][veh_id]["time"] )
-        return state2.vehicles[veh_id]["time"]
+        return c + ( state2.vehicles[veh_id]["time"] - state1.vehicles[veh_id]["time"] )
+        # return state2.vehicles[veh_id]["time"]
     
     
     def solve(self):
