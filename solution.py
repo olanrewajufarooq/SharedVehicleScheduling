@@ -1,6 +1,7 @@
 import search
 import numpy as np
 import re, copy
+from random import sample
 
 
 class FleetProblem(search.Problem):
@@ -202,7 +203,8 @@ Max passenger capacity: {self.V}
     
     def actions(self, state):
         
-        for req_id in state["R"]:
+        # for req_id in state["R"]:
+        for req_id in sample(state["R"], len(state["R"])):
             pick_up_loc = self.R[req_id][1]
             requested_pick_up_time = self.R[req_id][0]
             
@@ -216,7 +218,8 @@ Max passenger capacity: {self.V}
                     
                     yield ("Pickup", veh_id, req_id, t )
         
-        for veh_id in state["V"].keys():
+        # for veh_id in state["V"].keys():
+        for veh_id in sample( list(state["V"].keys()), len(list(state["V"].keys())) ):
             if len(state["V"][veh_id]["passengers"]) != 0: # Checking if the vehicle is carrying any request to drop-off
                 for req_id in state["V"][veh_id]["passengers"]:
                                         
@@ -226,23 +229,31 @@ Max passenger capacity: {self.V}
 
     
     def goal_test(self, state):
-        result = False
-        if len(state["R"]) == 0:
-            for _, veh_value in state["V"].items():
-                if len(veh_value["passengers"]) != 0:
-                    break
-            else:
-                result = True
-        return result
+        # result = False
+        # if len(state["R"]) == 0:
+        #     for _, veh_value in state["V"].items():
+        #         if len(veh_value["passengers"]) != 0:
+        #             break
+        #     else:
+        #         result = True
+        # return result
+        
+        expanded_actions = self.actions(state)
+        if len( list(expanded_actions) ) == 0:
+            return True
+        else:
+            return False
     
     
     def path_cost(self, c, state1, action, state2):
         veh_id = action[1] # Determining vehicle that performed action
         # Path cost of previous state + time to travel from previous state to new state
-        return c + ( state2["V"][veh_id]["time"] - state1["V"][veh_id]["time"] )
+        # return c + ( state2["V"][veh_id]["time"] - state1["V"][veh_id]["time"] )
+        return state2["V"][veh_id]["time"]
     
     
     def solve(self):
         goal_node = search.depth_limited_search(self, limit=self.no_of_requests*2)
+        # goal_node = search.iterative_deepening_search(self)
+        # goal_node = search.uniform_cost_search(self)
         return goal_node.solution()
-    
