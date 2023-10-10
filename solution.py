@@ -21,8 +21,8 @@ class FleetProblem(search.Problem):
         self.V = []
         self.no_of_vehicles = 0
         
-        self.initial = {}
-        # self.goal = {}
+        self.initial = State()
+        self.goal = State()
     
     def __str__(self):
         return f"""
@@ -204,33 +204,33 @@ Max passenger capacity: {self.V}
     
     def actions(self, state):
         
-        for req_id in state["R"]:
+        for req_id in state.request:
             pick_up_loc = self.R[req_id][1]
             requested_pick_up_time = self.R[req_id][0]
             
-            for veh_id in state["V"].keys():
+            for veh_id in state.vehicles.keys():
                 
-                if state["V"][veh_id]["space_left"] >= self.R[req_id][3]: # Pick up if there is space for passengers
+                if state.vehicles[veh_id]["space_left"] >= self.R[req_id][3]: # Pick up if there is space for passengers
                 
                     # Current veh time + time to arrive at pick up point
-                    arrival_time = state["V"][veh_id]["time"] + self.P[ pick_up_loc, state["V"][veh_id]["location"] ]
+                    arrival_time = state.vehicles[veh_id]["time"] + self.P[ pick_up_loc, state.vehicles[veh_id]["location"] ]
                     t = requested_pick_up_time if arrival_time < requested_pick_up_time else arrival_time
                     
                     yield ("Pickup", veh_id, req_id, t )
         
-        for veh_id in state["V"].keys():
-            if len(state["V"][veh_id]["passengers"]) != 0: # Checking if the vehicle is carrying any request to drop-off
-                for req_id in state["V"][veh_id]["passengers"]:
+        for veh_id in state.vehicles.keys():
+            if len(state.vehicles[veh_id]["passengers"]) != 0: # Checking if the vehicle is carrying any request to drop-off
+                for req_id in state.vehicles[veh_id]["passengers"]:
                                         
                     # Current veh time + time to move from current position to dropoff point.
-                    drop_off_time = state["V"][veh_id]["time"] + self.P[ self.R[req_id][2], state["V"][veh_id]["location"] ]
+                    drop_off_time = state.vehicles[veh_id]["time"] + self.P[ self.R[req_id][2], state.vehicles[veh_id]["location"] ]
                     yield ("Dropoff", veh_id, req_id, drop_off_time)
 
     
     def goal_test(self, state):
         # result = False
         # if len(state["R"]) == 0:
-        #     for _, veh_value in state["V"].items():
+        #     for _, veh_value in state.vehicles.items():
         #         if len(veh_value["passengers"]) != 0:
         #             break
         #     else:
