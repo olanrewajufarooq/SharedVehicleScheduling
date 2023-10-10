@@ -1,7 +1,6 @@
 import search
 import numpy as np
 import re, copy
-from random import sample
 
 
 class FleetProblem(search.Problem):
@@ -205,8 +204,7 @@ Max passenger capacity: {self.V}
     
     def actions(self, state):
         
-        # for req_id in state["R"]:
-        for req_id in sample(state["R"], len(state["R"])):
+        for req_id in state["R"]:
             pick_up_loc = self.R[req_id][1]
             requested_pick_up_time = self.R[req_id][0]
             
@@ -220,8 +218,7 @@ Max passenger capacity: {self.V}
                     
                     yield ("Pickup", veh_id, req_id, t )
         
-        # for veh_id in state["V"].keys():
-        for veh_id in sample( list(state["V"].keys()), len(list(state["V"].keys())) ):
+        for veh_id in state["V"].keys():
             if len(state["V"][veh_id]["passengers"]) != 0: # Checking if the vehicle is carrying any request to drop-off
                 for req_id in state["V"][veh_id]["passengers"]:
                                         
