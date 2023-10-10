@@ -254,9 +254,9 @@ Max passenger capacity: {self.V}
     
     
     def solve(self):
-        goal_node = search.depth_limited_search(self, limit=self.no_of_requests*2)
+        # goal_node = search.depth_limited_search(self, limit=self.no_of_requests*2)
         # goal_node = search.iterative_deepening_search(self)
-        # goal_node = search.uniform_cost_search(self)
+        goal_node = search.uniform_cost_search(self)
         return goal_node.solution()
 
 
@@ -293,6 +293,20 @@ class State:
             all_vehicle_states_equal = True
         
         return isinstance(state, State) and ( set(self.request) == set(state.request) ) and all_vehicle_states_equal
+    
+    def __lt__(self, state):
+        less_than = False
+        
+        if len(self.request) < len(state.request):
+            less_than = True
+        else:
+            for veh, veh_values in self.vehicles.items():
+                if len(veh_values["passengers"]) < len(state.vehicles[veh]["passengers"]):
+                    less_than = True
+                    break
+        
+        return less_than
+    
     
     def __hash__(self):
         return hash(self.id)
