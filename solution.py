@@ -389,8 +389,9 @@ class State:
             pick_up_time = previous_state.vehicles[veh_id][3][pick_up_time_id]
             
             # Step cost = Dropoff Time - (Pickup Time + Time of Direct Travel)
-            step_cost = action_time - ( pick_up_time + self.problem.P[ self.problem.R[req_id][2], self.problem.R[req_id][1] ] )
+            # step_cost = action_time - ( pick_up_time + self.problem.P[ self.problem.R[req_id][2], self.problem.R[req_id][1] ] )
             # step_cost = action_time - ( self.problem.R[req_id][0] + self.problem.P[ self.problem.R[req_id][2], self.problem.R[req_id][1] ] )
+            step_cost = 0
         
         # Path cost of previous state + time to travel from previous state to new state
         # self.path_cost = previous_state.path_cost + ( self.vehicles[veh_id][0] - previous_state.vehicles[veh_id][0] )
@@ -413,7 +414,7 @@ class State:
     @property
     def id(self):
         
-        id_value = [tuple(self.request), self.path_cost]
+        id_value = [tuple(set(self.request)), self.path_cost]
         for _, vehicle_values in enumerate(self.vehicles):
             id_value.append( tuple(vehicle_values[2]) )
             
