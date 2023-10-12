@@ -233,7 +233,8 @@ Max passenger capacity: {self.V}
                     # Current veh time + time to move from current position to dropoff point.
                     drop_off_time = veh_values[0] + self.P[ self.R[req_id][2], veh_values[1] ]
                     yield ("Dropoff", veh_id, req_id, drop_off_time)
-                    
+
+        for veh_id, veh_values in enumerate(state.vehicles):            
             for req_id in state.request:
                 pick_up_loc = self.R[req_id][1]
                 requested_pick_up_time = self.R[req_id][0]
