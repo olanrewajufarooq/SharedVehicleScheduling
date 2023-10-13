@@ -146,7 +146,7 @@ class FleetProblem(search.Problem):
         for req_id in range(self.no_of_requests):
 
             dropoff_time = sol_data["Dropoff", req_id]["action time"]
-
+            
             request_time = self.R[req_id][0] # Getting the request time from the dictionary
             pickup_point = self.R[req_id][1]
             dropoff_point = self.R[req_id][2]
@@ -178,14 +178,14 @@ Max passenger capacity: {self.V}
     def create_initial_goal_states(self):
         """Creating the initial state and the goal state for the given problem"""
         self.initial = State(request= [i for i, _ in self.R.items()], 
-                             vehicles=[ [0, 0, [], []] for _ in range(len(self.V)) ], # Time, Location, Passengers in Vehicle, Pickup Time of Passengers
+                             vehicles=[ Vehicle(space_left=veh_capacity, passengers=[], pickup_times=[]) for veh_capacity in self.V ], # Creating Vehicle objects
                              path_cost= 0,
                              problem=self)
         
-        self.goal = State(request=[], 
-                          vehicles=[ [None, None, [], []] for id in range(len(self.V)) ], # Time, Location, Passengers, Pickup Time
-                          path_cost= 0,
-                          problem=self) # Not used for the current problem.
+        self.goal = State(request= [], 
+                          vehicles= [ Vehicle() for _ in self.V ], # Creating vehicle objects with empty passengers.
+                          path_cost= None,
+                          problem= self) # Not used for the current problem.
     
     def result(self, state, action):
         """A function to obtain the result of an action on a state.
@@ -200,7 +200,16 @@ Max passenger capacity: {self.V}
         
         action_, veh_id, req_id, action_time = action
         
-        new_state = copy.deepcopy(state) # Making deep copy of the previous state to avoid referencing same objects
+        # new_state = copy.deepcopy(state) # Making deep copy of the previous state to avoid referencing same objects
+        new_state = State(request=copy.copy(state.request), 
+                          vehicles=[ Vehicle(
+                              time = copy.copy(state.vehicles[veh_id].time),
+                              loc = copy.copy(state.vehicles[veh_id].loc),
+                              space_left = copy.copy(state.vehicles[veh_id].space_left),
+                              passengers=copy.copy(state.vehicles[veh_id].passengers),
+                              pickup_times=copy.copy(state.vehicles[veh_id].pickup_times)
+                              ) for veh_id, _ in enumerate(self.V) ],
+                          problem=self)
         
         if action_ == 'Pickup':
             
@@ -208,23 +217,25 @@ Max passenger capacity: {self.V}
             new_state.request.remove( req_id ) # Remove the picked-up request id from the child state
             
             # Vehicle Parameters Adjustments
-            new_state.vehicles[veh_id][0] = action_time # Pickup time
-            new_state.vehicles[veh_id][1] = self.R[req_id][1] # Pickup Location
+            new_state.vehicles[veh_id].time = action_time # Pickup time
+            new_state.vehicles[veh_id].loc = self.R[req_id][1] # Pickup Location
+            new_state.vehicles[veh_id].space_left = state.vehicles[veh_id].space_left - self.R[req_id][3]
             
             # Passenger Parameters Adjustments
-            new_state.vehicles[veh_id][2].append( req_id ) # Adding the new passengers to the vehicle
-            new_state.vehicles[veh_id][3].append( action_time ) # Adding the pickup time of the new passengers
+            new_state.vehicles[veh_id].passengers.append( req_id ) # Adding the new passengers to the vehicle
+            new_state.vehicles[veh_id].pickup_times.append( action_time ) # Adding the pickup time of the new passengers
             
         elif action_ == 'Dropoff':
             
             # Vehicle Parameters Adjustments
-            new_state.vehicles[veh_id][0] = action_time #Dropoff time
-            new_state.vehicles[veh_id][1] = self.R[req_id][2] #Dropoff Location
+            new_state.vehicles[veh_id].time = action_time #Dropoff time
+            new_state.vehicles[veh_id].loc = self.R[req_id][2] #Dropoff Location
+            new_state.vehicles[veh_id].space_left = state.vehicles[veh_id].space_left + self.R[req_id][3]
             
             # Passenger Parameters Adjustments
-            ind = state.vehicles[veh_id][2].index( req_id ) # Getting the index of the passenger
-            new_state.vehicles[veh_id][2].pop( ind ) # Removing the passengers from the vehicle
-            new_state.vehicles[veh_id][3].pop( ind ) # Removing the corresponding pickup time
+            ind = state.vehicles[veh_id].passengers.index( req_id ) # Getting the index of the passenger
+            new_state.vehicles[veh_id].passengers.pop( ind ) # Removing the passengers from the vehicle
+            new_state.vehicles[veh_id].pickup_times.pop( ind ) # Removing the corresponding pickup time
         
         new_state.compute_path_cost(state, action)
         
@@ -243,23 +254,23 @@ Max passenger capacity: {self.V}
         
         for veh_id, veh_values in enumerate(state.vehicles): # Getting possible actions for each vehicle
             
-            if len(veh_values[2]) != 0: # Checking if the vehicle is carrying any passenger
+            if len(veh_values.passengers) != 0: # Checking if the vehicle is carrying any passenger
                 
-                for req_id in state.vehicles[veh_id][2]: 
+                for req_id in veh_values.passengers:
                     
                     # Current veh time + time to move from current position to dropoff point.
-                    drop_off_time = veh_values[0] + self.P[ self.R[req_id][2], veh_values[1] ]
+                    drop_off_time = veh_values.time + self.P[ self.R[req_id][2], veh_values.loc ]
                     yield ("Dropoff", veh_id, req_id, drop_off_time) # Dropping off passengers onboard.
                     
             for req_id in state.request: # Checking for available requests
                 
-                if state.vehicle_space_left(veh_id) >= self.R[req_id][3]: # Checking if there is space for the passengers in the vehicle
+                if state.vehicles[veh_id].space_left >= self.R[req_id][3]: # Checking if there is space for the passengers in the vehicle
                     
                     pick_up_loc = self.R[req_id][1] # Pickup Location of Request
                     requested_pick_up_time = self.R[req_id][0] # Pickup Time of Request
                     
                     # Current veh time + time from current veh location to pickup location
-                    arrival_time = veh_values[0] + self.P[ veh_values[1], pick_up_loc ]
+                    arrival_time = veh_values.time + self.P[ veh_values.loc, pick_up_loc ]
                     t = requested_pick_up_time if arrival_time < requested_pick_up_time else arrival_time
                     
                     yield ("Pickup", veh_id, req_id, t )  # Picking up the passengers
@@ -315,30 +326,13 @@ class State:
         self.vehicles = vehicles
         self.path_cost = path_cost
         self.problem = problem
-        
-    def vehicle_space_left(self, veh_id):
-        avilable_space = self.problem.V[veh_id]
-        
-        for req_id in self.vehicles[veh_id][2]:
-            avilable_space -= self.problem.R[req_id][-1]
-        
-        return avilable_space
     
-    def __eq__(self, state):
-        """_summary_
-
-        Args:
-            state (_type_): _description_
-
-        Returns:
-            _type_: _description_
-        """
-        
+    def __eq__(self, state):        
         equal = False
         
         if set(self.request) == set(state.request):
-            for veh, veh_values in enumerate(self.vehicles):
-                if ( set(veh_values[2]) != set(state.vehicles[veh][2]) ) or ( veh_values[0] != state.vehicles[veh][0] ) or ( veh_values[1] != state.vehicles[veh][1] ):
+            for veh_id, veh_values in enumerate(self.vehicles):
+                if ( set(veh_values.passengers) != set(state.vehicles[veh_id].passengers) ) or ( veh_values.time != state.vehicles[veh_id].time ) or ( veh_values.loc != state.vehicles[veh_id].loc ):
                     break
             else:
                 if self.path_cost == state.path_cost:
@@ -347,14 +341,6 @@ class State:
         return equal
     
     def __lt__(self, state):
-        """_summary_
-
-        Args:
-            state (_type_): _description_
-
-        Returns:
-            _type_: _description_
-        """
         return True if (self.path_cost < state.path_cost) else False
     
     def compute_path_cost(self, previous_state, action):
@@ -372,8 +358,8 @@ class State:
             step_cost = action_time - self.problem.R[req_id][0]
         
         elif action[0] == 'Dropoff':
-            pick_up_time_id = previous_state.vehicles[veh_id][2].index(req_id)
-            pick_up_time = previous_state.vehicles[veh_id][3][pick_up_time_id]
+            pick_up_time_id = previous_state.vehicles[veh_id].passengers.index(req_id)
+            pick_up_time = previous_state.vehicles[veh_id].pickup_times[pick_up_time_id]
             
             # Step cost = Dropoff Time - (Pickup Time + Time of Direct Travel)
             step_cost = action_time - ( pick_up_time + self.problem.P[ self.problem.R[req_id][2], self.problem.R[req_id][1] ] )
@@ -385,16 +371,6 @@ class State:
     def __hash__(self):
         return hash(self.id)
     
-    def __deepcopy__(self, memo):
-        new_inst = type(self).__new__(self.__class__)  # skips calling __init__
-        new_inst.problem = self.problem  # just assign
-
-        # rinse and repeat this for other attrs that need to be deepcopied:
-        new_inst.request = copy.deepcopy(self.request, memo)
-        new_inst.vehicles = copy.deepcopy(self.vehicles, memo)
-        new_inst.path_cost = copy.deepcopy(self.path_cost, memo)
-        return new_inst
-    
     @property
     def id(self):
         """_summary_
@@ -405,7 +381,7 @@ class State:
         
         id_value = [tuple(set(self.request))]
         for _, vehicle_values in enumerate(self.vehicles):
-            id_value.append( tuple( [ vehicle_values[0], vehicle_values[1], tuple(set(vehicle_values[2])) ] ) )
+            id_value.append( tuple( [ vehicle_values.time, vehicle_values.loc, tuple(set(vehicle_values.passengers)) ] ) )
             
         return tuple(id_value)
     
@@ -414,24 +390,22 @@ class State:
 =================================================
 Requests: {self.request}.
 Vehicles: 
-{self.vehicles}
+{[veh.__str__() for veh in self.vehicles]}
 =================================================
 """
 
 
 class Vehicle:
+    """_summary_
+    """
     
-    def __init__(self, time = 0, loc = 0, capacity = 0, passengers = [], pickup_times = []):
+    def __init__(self, time = 0, loc = 0, space_left = 0, passengers = None, pickup_times = None):
         self.time = time
         self.loc = loc
-        self.capacity = capacity
-        self.space_left = capacity
+        self.space_left = space_left
         self.passengers = passengers
         self.pickup_times = pickup_times
-        
-    def pickup_passengers(self, passenger_amount):
-        pass
     
-    def drop_off_passengers(self, passenger_amount):
-        pass
+    def __str__(self):
+        return f"Time: {self.time}, Location: {self.loc}, SpaceLeft: {self.space_left}, Passengers: {self.passengers}"
 
