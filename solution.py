@@ -1,6 +1,6 @@
-import search
+import re
 import numpy as np
-import re, copy
+import search
 
 
 class FleetProblem(search.Problem):
@@ -33,7 +33,7 @@ class FleetProblem(search.Problem):
             Exception: Error raised when a wrong code is given for the data input
         """
         
-        line_read_state = None 
+        line_read_state = None
         for line in fh:
             
             # Checking for commented lines
