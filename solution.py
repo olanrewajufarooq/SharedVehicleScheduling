@@ -177,10 +177,17 @@ Max passenger capacity: {self.V}
     # ASSIGNMENT 2 ADDITIONS
     def create_initial_goal_states(self):
         """Creating the initial state and the goal state for the given problem"""
-        self.initial = State(request= [i for i, _ in self.R.items()], 
-                             vehicles=[ Vehicle(space_left=veh_capacity, passengers=[], pickup_times=[]) for veh_capacity in self.V ], # Creating Vehicle objects
+        self.initial = State(request= [i for i, _ in self.R.items()],
+                             vehicles=[ Vehicle(time=0,
+                                                loc=0,
+                                                space_left=veh_capacity, # Initial space is the vehicle capacity.
+                                                passengers=[], # The passengers onboard the vehicle (defined in terms of request IDs)
+                                                pickup_times=[], # The time at which the passengers are taken onboard the vehicle
+                                                ) for veh_capacity in self.V ], # Creating Vehicle object for each vehicle
                              path_cost= 0,
                              problem=self)
+        
+        self.initial.compute_hash() # Computing the hash of the initial state
         
         self.goal = State(request= [], 
                           vehicles= [ Vehicle() for _ in self.V ], # Creating vehicle objects with empty passengers.
@@ -201,13 +208,13 @@ Max passenger capacity: {self.V}
         action_, veh_id, req_id, action_time = action
         
         # new_state = copy.deepcopy(state) # Making deep copy of the previous state to avoid referencing same objects
-        new_state = State(request=copy.copy(state.request), 
+        new_state = State(request=state.request[:],
                           vehicles=[ Vehicle(
-                              time = copy.copy(state.vehicles[veh_id].time),
-                              loc = copy.copy(state.vehicles[veh_id].loc),
-                              space_left = copy.copy(state.vehicles[veh_id].space_left),
-                              passengers=copy.copy(state.vehicles[veh_id].passengers),
-                              pickup_times=copy.copy(state.vehicles[veh_id].pickup_times)
+                              time=state.vehicles[veh_id].time,
+                              loc=state.vehicles[veh_id].loc,
+                              space_left = state.vehicles[veh_id].space_left,
+                              passengers=state.vehicles[veh_id].passengers[:],
+                              pickup_times=state.vehicles[veh_id].pickup_times[:]
                               ) for veh_id, _ in enumerate(self.V) ],
                           problem=self)
         
@@ -238,6 +245,7 @@ Max passenger capacity: {self.V}
             new_state.vehicles[veh_id].pickup_times.pop( ind ) # Removing the corresponding pickup time
         
         new_state.compute_path_cost(state, action)
+        new_state.compute_hash()
         
         return new_state
     
@@ -260,7 +268,7 @@ Max passenger capacity: {self.V}
                     
                     # Current veh time + time to move from current position to dropoff point.
                     drop_off_time = veh_values.time + self.P[ self.R[req_id][2], veh_values.loc ]
-                    yield ("Dropoff", veh_id, req_id, drop_off_time) # Dropping off passengers onboard.
+                    yield ("Dropoff", int(veh_id), int(req_id), float(drop_off_time) ) # Dropping off passengers onboard.
                     
             for req_id in state.request: # Checking for available requests
                 
@@ -273,43 +281,41 @@ Max passenger capacity: {self.V}
                     arrival_time = veh_values.time + self.P[ veh_values.loc, pick_up_loc ]
                     t = requested_pick_up_time if arrival_time < requested_pick_up_time else arrival_time
                     
-                    yield ("Pickup", veh_id, req_id, t )  # Picking up the passengers
+                    yield ("Pickup", veh_id, req_id, t)  # Picking up the passengers
     
     def goal_test(self, state):
-        """_summary_
+        """A function to check for a goal state in the environment
 
         Args:
-            state (_type_): _description_
+            state (State): current state of the environment
 
         Returns:
-            _type_: _description_
+            bool: True if the state is a goal state else False.
         """
         
-        expanded_actions = self.actions(state)
-        if len( list(expanded_actions) ) == 0:
-            return True
-        else:
-            return False
+        # Checking if the current state could have any further actions.
+        # At goal: all requests have been picked up and no passenger is onboard any vehicle. Hence, no possible action.
+        return True if len( list(self.actions(state)) ) == 0 else False
     
     def path_cost(self, c, state1, action, state2):
-        """_summary_
+        """A function to obtain the path cost of a state
 
         Args:
-            c (float): _description_
-            state1 (State): _description_
-            action (tuple): _description_
-            state2 (State): _description_
+            c (float): path cost of previous state
+            state1 (State): previous state of the environment
+            action (tuple): action taken to reach the current state
+            state2 (State): current state of the environment
 
         Returns:
-            float: _description_
+            float: path cost to reach the current state
         """
         return state2.path_cost
     
     def solve(self):
-        """_summary_
+        """A function to call a solver for the search problem
 
         Returns:
-            _type_: _description_
+            list: a list of all actions taken to reach the goal
         """
         
         goal_node = search.uniform_cost_search(self, display=True)
@@ -318,50 +324,49 @@ Max passenger capacity: {self.V}
 
 
 class State:
-    """_summary_
+    """A class for the states of the environment
     """
     
     def __init__(self, request = None, vehicles = None, path_cost = None, problem = None ):
+        """_summary_
+
+        Args:
+            request (list, optional): unfulfilled requests in the environment. Defaults to None.
+            vehicles (list, optional): a list of Vehicle objects. Defaults to None.
+            path_cost (float, optional): the total cost to reach the current state. Defaults to None.
+            problem (FleetProblem, optional): the fleet problem to be solved. Defaults to None.
+        """
         self.request = request
         self.vehicles = vehicles
         self.path_cost = path_cost
         self.problem = problem
     
-    def __eq__(self, state):        
-        equal = False
-        
-        if set(self.request) == set(state.request):
-            for veh_id, veh_values in enumerate(self.vehicles):
-                if ( set(veh_values.passengers) != set(state.vehicles[veh_id].passengers) ) or ( veh_values.time != state.vehicles[veh_id].time ) or ( veh_values.loc != state.vehicles[veh_id].loc ):
-                    break
-            else:
-                if self.path_cost == state.path_cost:
-                    equal = True
-        
-        return equal
+    def __eq__(self, state):
+        return True if self.hash == state.hash else False
     
     def __lt__(self, state):
         return True if (self.path_cost < state.path_cost) else False
     
     def compute_path_cost(self, previous_state, action):
-        """_summary_
+        """A function to compute the path cost to reach the current state
 
         Args:
-            previous_state (_type_): _description_
-            action (_type_): _description_
+            previous_state (State): previous state of the environment
+            action (tuple): a tuple of action taken to reach the current state from previous state.
         """
         
+        # The action variable contains: (Pickup/Dropoff, Vehicle ID, Request ID, Action Completion Time)
         _, veh_id, req_id, action_time = action
         
         if action[0] == 'Pickup':
-            # Step cost = Pickup Time - Expected PickUp Time
+            # Step cost = Pickup Time - Expected PickUp Time (i.e. step_cost is the pickup delay)
             step_cost = action_time - self.problem.R[req_id][0]
         
         elif action[0] == 'Dropoff':
             pick_up_time_id = previous_state.vehicles[veh_id].passengers.index(req_id)
             pick_up_time = previous_state.vehicles[veh_id].pickup_times[pick_up_time_id]
             
-            # Step cost = Dropoff Time - (Pickup Time + Time of Direct Travel)
+            # Step cost = Dropoff Time - (Pickup Time + Time of Direct Travel) => step_cost is delay in expected arrival time from pickup
             step_cost = action_time - ( pick_up_time + self.problem.P[ self.problem.R[req_id][2], self.problem.R[req_id][1] ] )
         
         # Path cost of previous state + step_cost to travel from previous state to new state
@@ -369,21 +374,20 @@ class State:
     
     
     def __hash__(self):
-        return hash(self.id)
+        return self.hash
     
-    @property
-    def id(self):
-        """_summary_
-
-        Returns:
-            _type_: _description_
+    def compute_hash(self):
+        """Computing a identifier for the state.
+            States that are exactly the same will give same output.
         """
         
-        id_value = [tuple(set(self.request))]
+        id_value = [tuple(set(self.request))] # Creating a list of [Unfilfilled Requests]
+        
         for _, vehicle_values in enumerate(self.vehicles):
-            id_value.append( tuple( [ vehicle_values.time, vehicle_values.loc, tuple(set(vehicle_values.passengers)) ] ) )
+            # Appending the Requests onboard each vehicle to the list.
+            id_value.append( tuple( [ vehicle_values.time, vehicle_values.loc, tuple(set(vehicle_values.passengers)) ] ) ) 
             
-        return tuple(id_value)
+        self.hash = hash( tuple(id_value) ) # Converting to a hash.
     
     def __str__(self) -> str:
         return f"""
@@ -396,10 +400,19 @@ Vehicles:
 
 
 class Vehicle:
-    """_summary_
+    """A class for vehicle information
     """
     
     def __init__(self, time = 0, loc = 0, space_left = 0, passengers = None, pickup_times = None):
+        """Initializing the parameters for the vehicle
+
+        Args:
+            time (int, optional): the current time elapsed by the vehicle. Defaults to 0.
+            loc (int, optional): the current location of the vehicle in the environment. Defaults to 0.
+            space_left (int, optional): amount of space left for passengers in the vehicle. Defaults to 0.
+            passengers (list, optional): request IDs onboard the vehicle. Defaults to None.
+            pickup_times (list, optional): the pickup time for the request IDs. Defaults to None.
+        """
         self.time = time
         self.loc = loc
         self.space_left = space_left
