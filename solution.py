@@ -311,6 +311,10 @@ Max passenger capacity: {self.V}
         """
         return state2.path_cost
     
+    #ASSIGNMENT 3
+    def h(self,state):
+        pass
+
     def solve(self):
         """A function to call a solver for the search problem
 
