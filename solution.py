@@ -383,7 +383,8 @@ class State:
     
     # ASSIGNMENT 3
     def compute_heuristic(self):
-        self.heuristic = max( self.heuristic1(), self.heuristic2() )
+        # self.heuristic = max( self.heuristic1(), self.heuristic2() )
+        self.heuristic = self.heuristic2()
     
     def heuristic1(self):
 
@@ -406,7 +407,35 @@ class State:
     
     
     def heuristic2(self):
-        return 0
+        
+        estimated_costs = np.zeros(self.problem.no_of_requests)
+        
+        for veh_id, veh_values in enumerate(self.vehicles): # Getting possible actions for each vehicle
+            
+            if len(veh_values.passengers) != 0: # Checking if the vehicle is carrying any passenger
+                
+                for req_id, pickup_time in zip(veh_values.passengers, veh_values.pickup_times):
+                    
+                    # Current veh time + time to move from current position to dropoff point.
+                    drop_off_time = veh_values.time + self.problem.P[ self.problem.R[req_id][2], veh_values.loc ]
+                    delay = drop_off_time - (pickup_time + self.problem.P[ self.problem.R[req_id][1], self.problem.R[req_id][2] ])
+                    estimated_costs[req_id] = max(delay, estimated_costs[req_id])
+                    
+            for req_id in self.request: # Checking for available requests
+                
+                if self.vehicles[veh_id].space_left >= self.problem.R[req_id][3]: # Checking if there is space for the passengers in the vehicle
+                    
+                    pick_up_loc = self.problem.R[req_id][1] # Pickup Location of Request
+                    requested_pick_up_time = self.problem.R[req_id][0] # Pickup Time of Request
+                    
+                    # Current veh time + time from current veh location to pickup location
+                    arrival_time = veh_values.time + self.problem.P[ veh_values.loc, pick_up_loc ]
+                    
+                    delay = max(arrival_time - requested_pick_up_time, 0)
+                    
+                    estimated_costs[req_id] = max(delay, estimated_costs[req_id])
+                    
+        return np.sum(estimated_costs)
     
     
     def __hash__(self):
