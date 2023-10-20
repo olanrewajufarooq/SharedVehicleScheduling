@@ -313,33 +313,9 @@ Max passenger capacity: {self.V}
     
     #ASSIGNMENT 3
     def h(self,state):
-        max_heur = max([self.heur1(state), self.heur2(state)])
-
-        return max_heur
+        return state.heuristic
     
-    
-    def heur1(self, state):
-        state = state.state
-
-        #the request fulfillment times for all requests
-        request_fulfillment_times = np.empty(len(state.request))
-
-        for i, req_id in enumerate(state.request):
-            pickup_loc = self.R[req_id][1]  # pickup location
-            request_fulfillment_time = state.vehicles[0].time + self.P[state.vehicles[0].loc][pickup_loc]
-            request_fulfillment_times[i] = request_fulfillment_time
-
-        #difference between request times and request fulfillment times
-        request_times = np.array([self.R[req_id][0] for req_id in state.request])
-        delays = np.maximum(0, request_fulfillment_times - request_times)
-
-        # Sum up the delays for all requests
-        total_delay = np.sum(delays)
-        
-        return total_delay
-    
-    def heur2(self, state):
-        return 0
+    # END ASSIGNMENT 3
     
     def solve(self):
         """A function to call a solver for the search problem
@@ -402,6 +378,33 @@ class State:
         
         # Path cost of previous state + step_cost to travel from previous state to new state
         self.path_cost = previous_state.path_cost + step_cost
+    
+    # ASSIGNMENT 3
+    def compute_heuristic(self):
+        return 0
+    
+    def heuristic1(self):
+
+        #the request fulfillment times for all requests
+        request_fulfillment_times = np.empty(len(self.request))
+
+        for i, req_id in enumerate(self.request):
+            pickup_loc = self.problem.R[req_id][1]  # pickup location
+            request_fulfillment_time = self.vehicles[0].time + self.problem.P[self.vehicles[0].loc][pickup_loc]
+            request_fulfillment_times[i] = request_fulfillment_time
+
+        #difference between request times and request fulfillment times
+        request_times = np.array([self.problem.R[req_id][0] for req_id in self.request])
+        delays = np.maximum(0, request_fulfillment_times - request_times)
+
+        # Sum up the delays for all requests
+        total_delay = np.sum(delays)
+        
+        return total_delay
+    
+    
+    def heuristic2(self):
+        return 0
     
     
     def __hash__(self):
