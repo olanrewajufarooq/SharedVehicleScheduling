@@ -313,6 +313,12 @@ Max passenger capacity: {self.V}
     
     #ASSIGNMENT 3
     def h(self,state):
+        max_heur = max([self.heur1(state), self.heur2(state)])
+
+        return max_heur
+    
+    
+    def heur1(self, state):
         state = state.state
 
         #the request fulfillment times for all requests
@@ -329,8 +335,11 @@ Max passenger capacity: {self.V}
 
         # Sum up the delays for all requests
         total_delay = np.sum(delays)
-
+        
         return total_delay
+    
+    def heur2(self, state):
+        return 0
     
     def solve(self):
         """A function to call a solver for the search problem
