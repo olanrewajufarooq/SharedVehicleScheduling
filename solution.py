@@ -313,8 +313,25 @@ Max passenger capacity: {self.V}
     
     #ASSIGNMENT 3
     def h(self,state):
-        pass
+        state = state.state
 
+        #the request fulfillment times for all requests
+        request_fulfillment_times = np.empty(len(state.request))
+
+        for i, req_id in enumerate(state.request):
+            pickup_loc = self.R[req_id][1]  # pickup location
+            request_fulfillment_time = state.vehicles[0].time + self.P[state.vehicles[0].loc][pickup_loc]
+            request_fulfillment_times[i] = request_fulfillment_time
+
+        #difference between request times and request fulfillment times
+        request_times = np.array([self.R[req_id][0] for req_id in state.request])
+        delays = np.maximum(0, request_fulfillment_times - request_times)
+
+        # Sum up the delays for all requests
+        total_delay = np.sum(delays)
+
+        return total_delay
+    
     def solve(self):
         """A function to call a solver for the search problem
 
@@ -322,7 +339,8 @@ Max passenger capacity: {self.V}
             list: a list of all actions taken to reach the goal
         """
         
-        goal_node = search.uniform_cost_search(self, display=True)
+
+        goal_node = search.astar_search(self)
         
         return goal_node.solution()
 
