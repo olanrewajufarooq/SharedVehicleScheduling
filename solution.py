@@ -188,6 +188,7 @@ Max passenger capacity: {self.V}
                              problem=self)
         
         self.initial.compute_hash() # Computing the hash of the initial state
+        self.initial.compute_heuristic()
         
         self.goal = State(request= [], 
                           vehicles= [ Vehicle() for _ in self.V ], # Creating vehicle objects with empty passengers.
@@ -246,6 +247,7 @@ Max passenger capacity: {self.V}
         
         new_state.compute_path_cost(state, action)
         new_state.compute_hash()
+        new_state.compute_heuristic()
         
         return new_state
     
@@ -313,7 +315,7 @@ Max passenger capacity: {self.V}
     
     #ASSIGNMENT 3
     def h(self,state):
-        return state.heuristic
+        return state.state.heuristic
     
     # END ASSIGNMENT 3
     
@@ -381,7 +383,7 @@ class State:
     
     # ASSIGNMENT 3
     def compute_heuristic(self):
-        return 0
+        self.heuristic = max( self.heuristic1(), self.heuristic2() )
     
     def heuristic1(self):
 
