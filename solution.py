@@ -1,4 +1,4 @@
-import re
+import re, math
 import numpy as np
 import search
 
@@ -181,6 +181,7 @@ Max passenger capacity: {self.V}
                              vehicles=[ Vehicle(time=0,
                                                 loc=0,
                                                 space_left=veh_capacity, # Initial space is the vehicle capacity.
+                                                capacity=veh_capacity, # Vehicle capacity.
                                                 passengers=[], # The passengers onboard the vehicle (defined in terms of request IDs)
                                                 pickup_times=[], # The time at which the passengers are taken onboard the vehicle
                                                 ) for veh_capacity in self.V ], # Creating Vehicle object for each vehicle
@@ -188,9 +189,9 @@ Max passenger capacity: {self.V}
                              problem=self)
         
         self.initial.compute_hash() # Computing the hash of the initial state
-        self.initial.compute_heuristic()
+        # self.initial.compute_heuristic()
         
-        self.goal = State(request= [], 
+        self.goal = State(request= [],
                           vehicles= [ Vehicle() for _ in self.V ], # Creating vehicle objects with empty passengers.
                           path_cost= None,
                           problem= self) # Not used for the current problem.
@@ -214,6 +215,7 @@ Max passenger capacity: {self.V}
                               time=state.vehicles[veh_id].time,
                               loc=state.vehicles[veh_id].loc,
                               space_left = state.vehicles[veh_id].space_left,
+                              capacity = state.vehicles[veh_id].capacity,
                               passengers=state.vehicles[veh_id].passengers[:],
                               pickup_times=state.vehicles[veh_id].pickup_times[:]
                               ) for veh_id, _ in enumerate(self.V) ],
@@ -247,7 +249,7 @@ Max passenger capacity: {self.V}
         
         new_state.compute_path_cost(state, action)
         new_state.compute_hash()
-        new_state.compute_heuristic()
+        # new_state.compute_heuristic()
         
         return new_state
     
@@ -262,7 +264,7 @@ Max passenger capacity: {self.V}
                         A tuple of ("Pickup/Dropoff", Vehicle ID, Request ID, Action Completion Time)
         """
         
-        for veh_id, veh_values in enumerate(state.vehicles): # Getting possible actions for each vehicle
+        for veh_id, veh_values in sorted(enumerate(state.vehicles), key=lambda val: val[1].capacity, reverse=False): # Getting possible actions for each vehicle
             
             if len(veh_values.passengers) != 0: # Checking if the vehicle is carrying any passenger
                 
@@ -314,8 +316,47 @@ Max passenger capacity: {self.V}
         return state2.path_cost
     
     #ASSIGNMENT 3
-    def h(self,state):
-        return state.state.heuristic
+    def h(self, node):
+        
+        estimated_delay = 0
+        
+        for action_details in self.actions(node.state):
+            action, veh_id, req_id, action_completion_time = action_details
+            
+            if action == "Pickup":
+                estimated_delay += max( action_completion_time - self.P[ node.state.vehicles[veh_id].loc, self.R[req_id][1] ], 0 )
+            
+            elif action == "Dropoff":
+                pick_up_time_id = node.state.vehicles[veh_id].passengers.index(req_id)
+                pick_up_time = node.state.vehicles[veh_id].pickup_times[pick_up_time_id]
+                
+                estimated_delay += action_completion_time - (pick_up_time + self.P[ self.R[req_id][1], self.R[req_id][2] ])
+        
+        
+        for req_id in node.state.request:
+            min_delay = math.inf
+            
+            for veh_id, veh_values in sorted(enumerate(node.state.vehicles), key=lambda val: val[1].space_left, reverse=True):
+                if veh_values.space_left >= self.R[req_id][3]:
+                    min_delay = 0
+                    break
+                elif veh_values.capacity >= self.R[req_id][3]:
+                    for passenger in veh_values.passengers:
+                        if self.R[passenger][3] >= self.R[req_id][3]:
+                            time_to_drop = veh_values.time + self.P[ self.R[passenger][2], veh_values.loc ]
+                            time_to_pick_req = time_to_drop + self.P[ self.R[passenger][2], self.R[req_id][1] ]
+                            
+                            delay = time_to_pick_req - self.R[req_id][0]
+                            min_delay = min(min_delay, delay)
+            
+            if math.isinf(min_delay): 
+                earliest_veh = min(veh.time for _, veh in enumerate(node.state.vehicles))
+                min_delay = earliest_veh - self.R[req_id][0]
+                # min_delay = 0
+            
+            estimated_delay += min_delay
+        
+        return estimated_delay
     
     # END ASSIGNMENT 3
     
@@ -327,7 +368,7 @@ Max passenger capacity: {self.V}
         """
         
 
-        goal_node = search.astar_search(self)
+        goal_node = search.astar_search(self, display=True)
         
         return goal_node.solution()
 
@@ -381,62 +422,6 @@ class State:
         # Path cost of previous state + step_cost to travel from previous state to new state
         self.path_cost = previous_state.path_cost + step_cost
     
-    # ASSIGNMENT 3
-    def compute_heuristic(self):
-        # self.heuristic = max( self.heuristic1(), self.heuristic2() )
-        self.heuristic = self.heuristic2()
-    
-    def heuristic1(self):
-
-        #the request fulfillment times for all requests
-        request_fulfillment_times = np.empty(len(self.request))
-
-        for i, req_id in enumerate(self.request):
-            pickup_loc = self.problem.R[req_id][1]  # pickup location
-            request_fulfillment_time = self.vehicles[0].time + self.problem.P[self.vehicles[0].loc][pickup_loc]
-            request_fulfillment_times[i] = request_fulfillment_time
-
-        #difference between request times and request fulfillment times
-        request_times = np.array([self.problem.R[req_id][0] for req_id in self.request])
-        delays = np.maximum(0, request_fulfillment_times - request_times)
-
-        # Sum up the delays for all requests
-        total_delay = np.sum(delays)
-        
-        return total_delay
-    
-    
-    def heuristic2(self):
-        
-        estimated_costs = np.zeros(self.problem.no_of_requests)
-        
-        for veh_id, veh_values in enumerate(self.vehicles): # Getting possible actions for each vehicle
-            
-            if len(veh_values.passengers) != 0: # Checking if the vehicle is carrying any passenger
-                
-                for req_id, pickup_time in zip(veh_values.passengers, veh_values.pickup_times):
-                    
-                    # Current veh time + time to move from current position to dropoff point.
-                    drop_off_time = veh_values.time + self.problem.P[ self.problem.R[req_id][2], veh_values.loc ]
-                    delay = drop_off_time - (pickup_time + self.problem.P[ self.problem.R[req_id][1], self.problem.R[req_id][2] ])
-                    estimated_costs[req_id] = max(delay, estimated_costs[req_id])
-                    
-            for req_id in self.request: # Checking for available requests
-                
-                if self.vehicles[veh_id].space_left >= self.problem.R[req_id][3]: # Checking if there is space for the passengers in the vehicle
-                    
-                    pick_up_loc = self.problem.R[req_id][1] # Pickup Location of Request
-                    requested_pick_up_time = self.problem.R[req_id][0] # Pickup Time of Request
-                    
-                    # Current veh time + time from current veh location to pickup location
-                    arrival_time = veh_values.time + self.problem.P[ veh_values.loc, pick_up_loc ]
-                    
-                    delay = max(arrival_time - requested_pick_up_time, 0)
-                    
-                    estimated_costs[req_id] = max(delay, estimated_costs[req_id])
-                    
-        return np.sum(estimated_costs)
-    
     
     def __hash__(self):
         return self.hash
@@ -468,7 +453,7 @@ class Vehicle:
     """A class for vehicle information
     """
     
-    def __init__(self, time = 0, loc = 0, space_left = 0, passengers = None, pickup_times = None):
+    def __init__(self, time = 0, loc = 0, space_left = 0, capacity = 0, passengers = None, pickup_times = None):
         """Initializing the parameters for the vehicle
 
         Args:
@@ -481,9 +466,17 @@ class Vehicle:
         self.time = time
         self.loc = loc
         self.space_left = space_left
+        self.capacity = capacity
         self.passengers = passengers
         self.pickup_times = pickup_times
     
     def __str__(self):
         return f"Time: {self.time}, Location: {self.loc}, SpaceLeft: {self.space_left}, Passengers: {self.passengers}"
+    
+    def __lt__(self, vehicle):
+        return True if self.time < vehicle.time else False
+    
+    def __eq__(self, vehicle):
+        return True if self.time == vehicle.time else False
+        
 
