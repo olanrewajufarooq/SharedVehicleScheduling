@@ -163,14 +163,8 @@ class FleetProblem(search.Problem):
         return f"""
 =================================================
 Number of Points: {self.no_of_points}.
-P matrix: 
-{self.P}
-
 Number of Requests: {self.no_of_requests}.
-Request Data: {self.R}
-
 Number of Vehicles: {self.no_of_vehicles}.
-Max passenger capacity: {self.V}
 =================================================
 """
     
@@ -337,20 +331,6 @@ Max passenger capacity: {self.V}
     #ASSIGNMENT 3
     def h(self, node):
         
-        estimated_delay = 0
-        
-        # for action_details in self.actions(node.state):
-        #     action, veh_id, req_id, action_completion_time = action_details
-            
-        #     if action == "Pickup":
-        #         estimated_delay += max( action_completion_time - self.P[ node.state.vehicles[veh_id].loc, self.R[req_id][1] ], 0 )
-            
-        #     elif action == "Dropoff":
-        #         pick_up_time_id = node.state.vehicles[veh_id].passengers.index(req_id)
-        #         pick_up_time = node.state.vehicles[veh_id].pickup_times[pick_up_time_id]
-                
-        #         estimated_delay += action_completion_time - (pick_up_time + self.P[ self.R[req_id][1], self.R[req_id][2] ])
-        
         #the request fulfillment times for all requests
         request_fulfillment_times = np.empty(len(node.state.request))
         
@@ -366,11 +346,9 @@ Max passenger capacity: {self.V}
         #difference between request times and request fulfillment times
         request_times = np.array([self.R[req_id][0] for req_id in node.state.request])
         delays = np.maximum(0, abs(request_fulfillment_times - request_times))
-
-        # Sum up the delays for all requests
-        estimated_delay += np.sum(delays)
         
-        return estimated_delay
+        # Sum up the delays for all requests
+        return np.sum(delays)
     
     # END ASSIGNMENT 3
 
