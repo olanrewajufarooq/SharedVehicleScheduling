@@ -314,63 +314,65 @@ Max passenger capacity: {self.V}
             float: path cost to reach the current state
         """
         return state2.path_cost
+
+    def solve(self, display_solutions = False):
+        """A function to call a solver for the search problem
+
+        Returns:
+            list: a list of all actions taken to reach the goal
+        """
+
+        
+        
+        if display_solutions:
+            goal_node = search.astar_search(self, display=True)
+            print(f"Cost: {self.cost(goal_node.solution())}")
+            print(f"Goal Estimates: {[node.f for node in goal_node.path()[1:]]}")
+            print(f"Solution: {goal_node.solution()}")
+        else:
+            goal_node = search.astar_search(self, display=False)
+        
+        return goal_node.solution()
     
     #ASSIGNMENT 3
     def h(self, node):
         
         estimated_delay = 0
         
-        for action_details in self.actions(node.state):
-            action, veh_id, req_id, action_completion_time = action_details
+        # for action_details in self.actions(node.state):
+        #     action, veh_id, req_id, action_completion_time = action_details
             
-            if action == "Pickup":
-                estimated_delay += max( action_completion_time - self.P[ node.state.vehicles[veh_id].loc, self.R[req_id][1] ], 0 )
+        #     if action == "Pickup":
+        #         estimated_delay += max( action_completion_time - self.P[ node.state.vehicles[veh_id].loc, self.R[req_id][1] ], 0 )
             
-            elif action == "Dropoff":
-                pick_up_time_id = node.state.vehicles[veh_id].passengers.index(req_id)
-                pick_up_time = node.state.vehicles[veh_id].pickup_times[pick_up_time_id]
+        #     elif action == "Dropoff":
+        #         pick_up_time_id = node.state.vehicles[veh_id].passengers.index(req_id)
+        #         pick_up_time = node.state.vehicles[veh_id].pickup_times[pick_up_time_id]
                 
-                estimated_delay += action_completion_time - (pick_up_time + self.P[ self.R[req_id][1], self.R[req_id][2] ])
+        #         estimated_delay += action_completion_time - (pick_up_time + self.P[ self.R[req_id][1], self.R[req_id][2] ])
         
+        #the request fulfillment times for all requests
+        request_fulfillment_times = np.empty(len(node.state.request))
         
-        for req_id in node.state.request:
-            min_delay = math.inf
+        for i, req_id in enumerate(node.state.request):
+            pickup_loc = self.R[req_id][1] # pickup location
+            dropoff_loc = self.R[req_id][2] # dropoff location
             
-            for veh_id, veh_values in sorted(enumerate(node.state.vehicles), key=lambda val: val[1].space_left, reverse=True):
-                if veh_values.space_left >= self.R[req_id][3]:
-                    min_delay = 0
-                    break
-                elif veh_values.capacity >= self.R[req_id][3]:
-                    for passenger in veh_values.passengers:
-                        if self.R[passenger][3] >= self.R[req_id][3]:
-                            time_to_drop = veh_values.time + self.P[ self.R[passenger][2], veh_values.loc ]
-                            time_to_pick_req = time_to_drop + self.P[ self.R[passenger][2], self.R[req_id][1] ]
-                            
-                            delay = time_to_pick_req - self.R[req_id][0]
-                            min_delay = min(min_delay, delay)
-            
-            if math.isinf(min_delay): 
-                earliest_veh = min(veh.time for _, veh in enumerate(node.state.vehicles))
-                min_delay = earliest_veh - self.R[req_id][0]
-                # min_delay = 0
-            
-            estimated_delay += min_delay
+            for veh_id in range(self.no_of_vehicles):
+                # request_fulfillment_time = node.state.vehicles[veh_id].time + self.P[node.state.vehicles[veh_id].loc, pickup_loc] + self.P[node.state.vehicles[veh_id].loc, dropoff_loc]
+                request_fulfillment_time = node.state.vehicles[veh_id].time + self.P[node.state.vehicles[veh_id].loc, pickup_loc] + self.P[pickup_loc, dropoff_loc]
+                request_fulfillment_times[i] = request_fulfillment_time
+        
+        #difference between request times and request fulfillment times
+        request_times = np.array([self.R[req_id][0] for req_id in node.state.request])
+        delays = np.maximum(0, abs(request_fulfillment_times - request_times))
+
+        # Sum up the delays for all requests
+        estimated_delay += np.sum(delays)
         
         return estimated_delay
     
     # END ASSIGNMENT 3
-    
-    def solve(self):
-        """A function to call a solver for the search problem
-
-        Returns:
-            list: a list of all actions taken to reach the goal
-        """
-        
-
-        goal_node = search.astar_search(self, display=True)
-        
-        return goal_node.solution()
 
 
 class State:
