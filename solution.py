@@ -336,38 +336,56 @@ Number of Vehicles: {self.no_of_vehicles}.
     
     #ASSIGNMENT 3
     def h(self, node):
+        """
+        Calculate the heuristic cost for the given node's state.
 
-        #the request fulfillment times for all requests
+        Args:
+            node: The current node containing the state.
+
+        Returns:
+            float: Heuristic cost estimate.
+        """
+        # Initialize an array to store request fulfillment times for all requests
         request_fulfillment_times = np.empty(len(node.state.request))
         
         for i, req_id in enumerate(node.state.request):
-            pickup_loc = self.R[req_id][1] # pickup location
-            dropoff_loc = self.R[req_id][2] # dropoff location
-            fullfilment_times = []
-            if self.no_of_vehicles >=5:
+            pickup_loc = self.R[req_id][1]  # Pickup location
+            dropoff_loc = self.R[req_id][2]  # Dropoff location
+            fulfillment_times = []
+
+            if self.no_of_vehicles >= 5:
+                # Calculate fulfillment times for each vehicle and choose the minimum
                 for veh_id in range(self.no_of_vehicles):
-                    # request_fulfillment_time = node.state.vehicles[veh_id].time + self.P[node.state.vehicles[veh_id].loc, pickup_loc] + self.P[node.state.vehicles[veh_id].loc, dropoff_loc]
-                    request_fulfillment_time = node.state.vehicles[veh_id].time + self.P[node.state.vehicles[veh_id].loc, pickup_loc] + self.P[pickup_loc, dropoff_loc]
-                    fullfilment_times.append(request_fulfillment_time)    
-                    # request_fulfillment_times[i] = request_fulfillment_time
-                request_fulfillment_times[i] = min(fullfilment_times)
+                    time_to_pickup = self.P[node.state.vehicles[veh_id].loc, pickup_loc]
+                    time_to_dropoff = self.P[pickup_loc, dropoff_loc]
+                    request_fulfillment_time = node.state.vehicles[veh_id].time + time_to_pickup + time_to_dropoff
+                    fulfillment_times.append(request_fulfillment_time)
+
+                request_fulfillment_times[i] = min(fulfillment_times)
             else:
-                min_fullfilment_time = float('inf')
+                # Calculate fulfillment time if the number of vehicles is less than 5
+                min_fulfillment_time = float('inf')
                 for veh_id in range(self.no_of_vehicles):
-                    request_fulfillment_time = node.state.vehicles[veh_id].time + self.P[node.state.vehicles[veh_id].loc, pickup_loc] 
-                    min_fulfillment_time = min(min_fullfilment_time, request_fulfillment_time)
+                    time_to_pickup = self.P[node.state.vehicles[veh_id].loc, pickup_loc]
+                    request_fulfillment_time = node.state.vehicles[veh_id].time + time_to_pickup
+                    min_fulfillment_time = min(min_fulfillment_time, request_fulfillment_time)
+                
                 request_fulfillment_times[i] = min_fulfillment_time
 
-        #difference between request times and request fulfillment times
+        # Calculate the delay between request times and request fulfillment times
         request_times = np.array([self.R[req_id][0] for req_id in node.state.request])
-        if self.no_of_vehicles>=5:
-            delay = abs(request_fulfillment_times - request_times)
+
+        if self.no_of_vehicles >= 5:
+            delay = np.abs(request_fulfillment_times - request_times)
         else:
             delay = request_fulfillment_times - request_times
-        delays = np.maximum(delay,0)
 
-        # Sum up the delays for all requests
+        # Ensure that delays are non-negative
+        delays = np.maximum(delay, 0)
+
+        # Sum up the delays for all requests to get the heuristic cost
         return np.sum(delays)
+
 
     # END ASSIGNMENT 3
 
