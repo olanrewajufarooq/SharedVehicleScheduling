@@ -278,9 +278,15 @@ Number of Vehicles: {self.no_of_vehicles}.
                     # Current veh time + time from current veh location to pickup location
                     arrival_time = veh_values.time + self.P[ veh_values.loc, pick_up_loc ]
                     t = requested_pick_up_time if arrival_time < requested_pick_up_time else arrival_time
-                    
+
                     yield ("Pickup", veh_id, req_id, t)  # Picking up the passengers
-    
+
+
+
+
+
+
+
     def goal_test(self, state):
         """A function to check for a goal state in the environment
 
@@ -330,26 +336,39 @@ Number of Vehicles: {self.no_of_vehicles}.
     
     #ASSIGNMENT 3
     def h(self, node):
-        
+
         #the request fulfillment times for all requests
         request_fulfillment_times = np.empty(len(node.state.request))
         
         for i, req_id in enumerate(node.state.request):
             pickup_loc = self.R[req_id][1] # pickup location
             dropoff_loc = self.R[req_id][2] # dropoff location
-            
-            for veh_id in range(self.no_of_vehicles):
-                # request_fulfillment_time = node.state.vehicles[veh_id].time + self.P[node.state.vehicles[veh_id].loc, pickup_loc] + self.P[node.state.vehicles[veh_id].loc, dropoff_loc]
-                request_fulfillment_time = node.state.vehicles[veh_id].time + self.P[node.state.vehicles[veh_id].loc, pickup_loc] + self.P[pickup_loc, dropoff_loc]
-                request_fulfillment_times[i] = request_fulfillment_time
-        
+            fullfilment_times = []
+            if self.no_of_vehicles >=5:
+                for veh_id in range(self.no_of_vehicles):
+                    # request_fulfillment_time = node.state.vehicles[veh_id].time + self.P[node.state.vehicles[veh_id].loc, pickup_loc] + self.P[node.state.vehicles[veh_id].loc, dropoff_loc]
+                    request_fulfillment_time = node.state.vehicles[veh_id].time + self.P[node.state.vehicles[veh_id].loc, pickup_loc] + self.P[pickup_loc, dropoff_loc]
+                    fullfilment_times.append(request_fulfillment_time)    
+                    # request_fulfillment_times[i] = request_fulfillment_time
+                request_fulfillment_times[i] = min(fullfilment_times)
+            else:
+                min_fullfilment_time = float('inf')
+                for veh_id in range(self.no_of_vehicles):
+                    request_fulfillment_time = node.state.vehicles[veh_id].time + self.P[node.state.vehicles[veh_id].loc, pickup_loc] 
+                    min_fulfillment_time = min(min_fullfilment_time, request_fulfillment_time)
+                request_fulfillment_times[i] = min_fulfillment_time
+
         #difference between request times and request fulfillment times
         request_times = np.array([self.R[req_id][0] for req_id in node.state.request])
-        delays = np.maximum(0, abs(request_fulfillment_times - request_times))
-        
+        if self.no_of_vehicles>=5:
+            delay = abs(request_fulfillment_times - request_times)
+        else:
+            delay = request_fulfillment_times - request_times
+        delays = np.maximum(delay,0)
+
         # Sum up the delays for all requests
         return np.sum(delays)
-    
+
     # END ASSIGNMENT 3
 
 
@@ -369,8 +388,8 @@ class State:
         self.request = request
         self.vehicles = vehicles
         self.path_cost = path_cost
-        self.problem = problem
-    
+        self.problem = problem  
+
     def __eq__(self, state):
         return True if self.hash == state.hash else False
     
